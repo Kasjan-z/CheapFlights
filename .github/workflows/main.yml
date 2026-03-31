@@ -2,8 +2,12 @@ name: Global Flight Hunter (Europa + Świat)
 
 on:
   schedule:
-    - cron: '0 14 * * 2' # Uruchamia się we wtorki o 14:00 (UTC), czyli 15:00/16:00 w PL
-  workflow_dispatch: # Pozwala na ręczne kliknięcie "Run workflow"
+    - cron: '0 14 * * 2'
+  workflow_dispatch: 
+
+env:
+  # Wycisza irytujące ostrzeżenia GitHuba o przestarzałym Node.js
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
   hunt-flights:
@@ -12,10 +16,11 @@ jobs:
       - name: Pobranie kodu z repozytorium
         uses: actions/checkout@v4
 
-      - name: Przygotowanie środowiska Go (Dla Google Flights)
+      - name: Przygotowanie środowiska Go
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
+          cache: false # Wyłączamy cache, żeby pozbyć się błędu "Restore cache failed"
 
       - name: Przygotowanie środowiska Python
         uses: actions/setup-python@v5
@@ -33,16 +38,19 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python flight_hunter.py
-        continue-on-error: true # Jeśli Ryanair sypnie błędem, nie przerywamy pracy!
+        continue-on-error: true
 
       # ==========================================
       # MÓZG 2: GOOGLE FLIGHTS (ŚWIAT)
       # ==========================================
+      - name: 📦 Pobranie zależności Go (Naprawa błędu go.sum)
+        run: go mod tidy
+
       - name: 🌍 Pobieranie danych z Google Flights (Go)
         run: go run google_scanner.go
         continue-on-error: true
 
-      - name: 🛠️ Debug (Podgląd struktury JSON - ważne przy pierwszym teście!)
+      - name: 🛠️ Debug (Podgląd struktury JSON)
         run: cat results.json | head -n 50 || echo "Brak pliku results.json"
 
       - name: 📊 Analiza danych i wysyłka alertów (Python)
