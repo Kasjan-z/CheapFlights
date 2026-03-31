@@ -1,27 +1,52 @@
-name: Flight Check
+name: Global Flight Hunter (Europa + Świat)
 
 on:
   schedule:
-    - cron: '0 14 * * 2'
-  workflow_dispatch: 
+    - cron: '0 14 * * 2' # Uruchamia się we wtorki o 14:00 (UTC), czyli 15:00/16:00 w PL
+  workflow_dispatch: # Pozwala na ręczne kliknięcie "Run workflow"
 
 jobs:
-  build:
+  hunt-flights:
     runs-on: ubuntu-latest
     steps:
-      - name: Pobranie kodu
-        uses: actions/checkout@v4 # Zaktualizowano z v3
+      - name: Pobranie kodu z repozytorium
+        uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5 # Zaktualizowano z v4
+      - name: Przygotowanie środowiska Go (Dla Google Flights)
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+
+      - name: Przygotowanie środowiska Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instalacja bibliotek
-        run: pip install -r requirements.txt
+      - name: Instalacja bibliotek Pythona
+        run: pip install requests
 
-      - name: Run script
+      # ==========================================
+      # MÓZG 1: RYANAIR (EUROPA)
+      # ==========================================
+      - name: 🇪🇺 Odpalenie Snajpera (Ryanair)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python flight_hunter.py
+        continue-on-error: true # Jeśli Ryanair sypnie błędem, nie przerywamy pracy!
+
+      # ==========================================
+      # MÓZG 2: GOOGLE FLIGHTS (ŚWIAT)
+      # ==========================================
+      - name: 🌍 Pobieranie danych z Google Flights (Go)
+        run: go run google_scanner.go
+        continue-on-error: true
+
+      - name: 🛠️ Debug (Podgląd struktury JSON - ważne przy pierwszym teście!)
+        run: cat results.json | head -n 50 || echo "Brak pliku results.json"
+
+      - name: 📊 Analiza danych i wysyłka alertów (Python)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python processor.py
