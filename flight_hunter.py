@@ -3,23 +3,33 @@ import os
 from datetime import datetime, timedelta
 import time
 
-# Klucze pobierane z GitHub Secrets
+# Klucze z GitHub Secrets
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# Podział lotnisk dla różnych progów cenowych
+# Konfiguracja lotnisk wylotowych
 WAW_AIRPORT = ["WAW"]
 WMI_AIRPORT = ["WMI"]
 REGIONAL_AIRPORTS = ["KRK", "WRO", "GDN", "POZ", "KTW", "LUZ", "RZE", "LCJ"]
 ALL_AIRPORTS = WAW_AIRPORT + WMI_AIRPORT + REGIONAL_AIRPORTS
 
-# REALISTYCZNE ŚREDNIE CENY (w jedną stronę, w PLN)
-AVERAGE_PRICES = {
-    "Sweden": 100, "Norway": 100, "Denmark": 150, "United Kingdom": 220, 
-    "Ireland": 280, "Italy": 220, "Spain": 480, "Greece": 450,
-    "Croatia": 380, "Jordan": 550, "Cyprus": 420, "Malta": 400,
-    "France": 280, "Portugal": 550, "Morocco": 500, "Albania": 200,
-    "Bulgaria": 350, "Montenegro": 350, "DEFAULT": 300 
+# ŚREDNIE CENY PER KOD LOTNISKA (IATA) - W JEDNĄ STRONĘ, POZA SEZONEM (PLN)
+# Skonfigurowane pod "perełki" - program pomnoży to x2 dla lotów powrotnych.
+DEST_AVERAGES = {
+    # Skandynawia (Bardzo tanio)
+    "NYO": 90, "OSL": 90, "TRF": 90, "CPH": 110, "BLL": 100, "GOT": 90,
+    # Wielka Brytania i Irlandia
+    "STN": 140, "LTN": 140, "MAN": 160, "BRS": 150, "DUB": 200, "ORK": 200, "BFS": 160,
+    # Włochy
+    "BGY": 160, "CIA": 180, "FCO": 190, "NAP": 220, "PSA": 170, "BLQ": 170, "VCE": 180, "BRI": 200, "PMO": 250,
+    # Hiszpania i Portugalia
+    "BCN": 300, "ALC": 350, "AGP": 350, "MAD": 320, "TFS": 450, "ACE": 450, "PMI": 300, "LIS": 400, "OPO": 400, "FAO": 380,
+    # Grecja i Cypr
+    "ATH": 320, "CHQ": 350, "CFU": 320, "PFO": 320, "LCA": 320,
+    # Inne (Francja, Malta, Jordania, Maroko)
+    "BVA": 180, "MRS": 200, "MLA": 280, "AMM": 400, "RAK": 400, "AGA": 400, "TIA": 250, "SKP": 200, "BUD": 150,
+    # Domyślna średnia, jeśli lotniska nie ma na liście
+    "DEFAULT": 280 
 }
 
 def send_telegram_message(text):
@@ -27,14 +37,14 @@ def send_telegram_message(text):
         print("BŁĄD: Brak konfiguracji Telegrama.")
         return
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"}
+    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML", "disable_web_page_preview": False}
     try:
         requests.post(url, json=payload).raise_for_status()
     except Exception as e:
         print(f"Błąd wysyłania: {e}")
 
 def search_ryanair_roundtrips():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Start skanowania (WAW:0.4 | WMI:0.3 | Regiony:0.15)...")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Skanowanie 'Perełek'...")
     date_from = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
     date_to = (datetime.now() + timedelta(days=120)).strftime("%Y-%m-%d")
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
@@ -42,10 +52,10 @@ def search_ryanair_roundtrips():
     deals_counter = 0
 
     for origin_iata in ALL_AIRPORTS:
-        print(f"Skanuję: {origin_iata}...")
+        print(f"Skanuję trasę z: {origin_iata}...")
         base_url = "https://www.ryanair.com/api/farfnd/3/oneWayFares"
         
-        # Nowa logika progów (Thresholds)
+        # Progi (Thresholds)
         if origin_iata in WAW_AIRPORT:
             threshold = 0.40
         elif origin_iata in WMI_AIRPORT:
@@ -75,7 +85,9 @@ def search_ryanair_roundtrips():
                 
                 if not out_date or out_price == 0: continue
                 
-                avg_rt_price = AVERAGE_PRICES.get(country, AVERAGE_PRICES["DEFAULT"]) * 1.85
+                # Pobieramy średnią per lotnisko (IATA)
+                avg_one_way = DEST_AVERAGES.get(dest_iata, DEST_AVERAGES["DEFAULT"])
+                avg_rt_price = avg_one_way * 2
                 max_allowed_total = avg_rt_price * threshold
                 
                 if out_price >= max_allowed_total: continue
@@ -114,25 +126,25 @@ def search_ryanair_roundtrips():
                                 f"&originIata={origin_iata}&destinationIata={dest_iata}"
                             )
                             
-                            # Przywrócone formatowanie: HIT! [KRAJ]
+                            # Formatowanie: HIT! [KRAJ] + Średnia na trasie
                             msg = (
                                 f"🔥 <b>HIT! {country.upper()} (-{discount_pct:.0f}%)</b>\n\n"
                                 f"✈️ <b>Trasa:</b> {origin_iata} ↔️ {dest_iata} ({dest_name})\n"
                                 f"🛫 <b>Wylot:</b> {out_date} (<b>{out_price:.2f} PLN</b>)\n"
                                 f"🛬 <b>Powrót:</b> {in_date} (<b>{in_price:.2f} PLN</b>)\n"
                                 f"💰 <b>SUMA: {total_price:.2f} PLN</b>\n"
-                                f"<i>Średnia dla {country}: {avg_rt_price:.2f} PLN</i>\n\n"
+                                f"<i>Średnia cena na tej trasie: {avg_rt_price:.2f} PLN</i>\n\n"
                                 f"<a href='{booking_link}'>🔗 ZAREZERWUJ (Ryanair.com)</a>"
                             )
                             send_telegram_message(msg)
-                            time.sleep(1)
+                            time.sleep(1.2)
                             
             time.sleep(2)
             
         except Exception as e:
             print(f"Błąd przy {origin_iata}: {e}")
 
-    print(f"Zakończono. Znaleziono okazji: {deals_counter}")
+    print(f"Zakończono. Znaleziono perełek: {deals_counter}")
 
 if __name__ == "__main__":
     search_ryanair_roundtrips()
