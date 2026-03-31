@@ -20,12 +20,22 @@ jobs:
       - name: Instalacja bibliotek (Python)
         run: pip install requests fast-flights
 
-      - name: 🇪🇺 Odpalenie Snajpera (Ryanair)
+      # ==========================================
+      # MÓZG 2: GOOGLE FLIGHTS (ŚWIAT) - NAJPIERW!
+      # ==========================================
+      - name: 🌍 Odpalenie Kolosa (Google Flights - Świat)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python google_hunter.py
+        continue-on-error: true
+
+      # ==========================================
+      # MÓZG 1: RYANAIR (EUROPA)
+      # ==========================================
+      - name: 🇪🇺 Odpalenie Snajpera (Ryanair - Europa)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python flight_hunter.py
         continue-on-error: true
-
-      - name: 🌍 Odpalenie Kolosa (Google Flights - Sonda)
-        run: python google_hunter.py
