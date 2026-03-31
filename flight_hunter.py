@@ -7,11 +7,11 @@ import time
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# Lotniska warszawskie
-WARSAW_AIRPORTS = ["WMI", "WAW"]
-# Pozostałe lotniska regionalne
+# Podział lotnisk dla różnych progów cenowych
+WAW_AIRPORT = ["WAW"]
+WMI_AIRPORT = ["WMI"]
 REGIONAL_AIRPORTS = ["KRK", "WRO", "GDN", "POZ", "KTW", "LUZ", "RZE", "LCJ"]
-ALL_AIRPORTS = WARSAW_AIRPORTS + REGIONAL_AIRPORTS
+ALL_AIRPORTS = WAW_AIRPORT + WMI_AIRPORT + REGIONAL_AIRPORTS
 
 # REALISTYCZNE ŚREDNIE CENY (w jedną stronę, w PLN)
 AVERAGE_PRICES = {
@@ -34,7 +34,7 @@ def send_telegram_message(text):
         print(f"Błąd wysyłania: {e}")
 
 def search_ryanair_roundtrips():
-    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Start skanowania (Warszawa: 0.3 | Regiony: 0.1)...")
+    print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Start skanowania (WAW:0.4 | WMI:0.3 | Regiony:0.15)...")
     date_from = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
     date_to = (datetime.now() + timedelta(days=120)).strftime("%Y-%m-%d")
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
@@ -45,8 +45,13 @@ def search_ryanair_roundtrips():
         print(f"Skanuję: {origin_iata}...")
         base_url = "https://www.ryanair.com/api/farfnd/3/oneWayFares"
         
-        # Ustalamy mnożnik na podstawie lotniska
-        threshold = 0.30 if origin_iata in WARSAW_AIRPORTS else 0.10
+        # Nowa logika progów (Thresholds)
+        if origin_iata in WAW_AIRPORT:
+            threshold = 0.40
+        elif origin_iata in WMI_AIRPORT:
+            threshold = 0.30
+        else:
+            threshold = 0.15
         
         params_out = {
             "departureAirportIataCode": origin_iata,
@@ -70,7 +75,7 @@ def search_ryanair_roundtrips():
                 
                 if not out_date or out_price == 0: continue
                 
-                avg_rt_price = AVERAGE_PRICES.get(country, AVERAGE_PRICES["DEFAULT"]) * 2
+                avg_rt_price = AVERAGE_PRICES.get(country, AVERAGE_PRICES["DEFAULT"]) * 1.3
                 max_allowed_total = avg_rt_price * threshold
                 
                 if out_price >= max_allowed_total: continue
@@ -109,8 +114,9 @@ def search_ryanair_roundtrips():
                                 f"&originIata={origin_iata}&destinationIata={dest_iata}"
                             )
                             
+                            # Przywrócone formatowanie: HIT! [KRAJ]
                             msg = (
-                                f"🔥 <b>HIT Z {origin_iata}! (-{discount_pct:.0f}%)</b>\n\n"
+                                f"🔥 <b>HIT! {country.upper()} (-{discount_pct:.0f}%)</b>\n\n"
                                 f"✈️ <b>Trasa:</b> {origin_iata} ↔️ {dest_iata} ({dest_name})\n"
                                 f"🛫 <b>Wylot:</b> {out_date} (<b>{out_price:.2f} PLN</b>)\n"
                                 f"🛬 <b>Powrót:</b> {in_date} (<b>{in_price:.2f} PLN</b>)\n"
