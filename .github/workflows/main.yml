@@ -6,7 +6,6 @@ on:
   workflow_dispatch: 
 
 env:
-  # Wycisza irytujące ostrzeżenia GitHuba o przestarzałym Node.js
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
 
 jobs:
@@ -20,7 +19,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version: '1.21'
-          cache: false # Wyłączamy cache, żeby pozbyć się błędu "Restore cache failed"
+          cache: false
 
       - name: Przygotowanie środowiska Python
         uses: actions/setup-python@v5
@@ -43,8 +42,12 @@ jobs:
       # ==========================================
       # MÓZG 2: GOOGLE FLIGHTS (ŚWIAT)
       # ==========================================
-      - name: 📦 Pobranie zależności Go (Naprawa błędu go.sum)
-        run: go mod tidy
+      - name: 📦 Pobranie najnowszych zależności Go (Fix wersji)
+        run: |
+          rm -f go.mod go.sum
+          go mod init flight-scanner
+          go get github.com/AWeirdDev/flights@latest
+          go mod tidy
 
       - name: 🌍 Pobieranie danych z Google Flights (Go)
         run: go run google_scanner.go
