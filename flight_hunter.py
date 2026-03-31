@@ -151,4 +151,15 @@ def search_ryanair_roundtrips():
                                 f"<i>Normalna cena ok. {avg_rt_price:.2f} PLN</i>\n\n"
                                 f"<a href='{booking_link}'>🔗 ZAREZERWUJ LOT (Ryanair.com)</a>"
                             )
-                            send
+                            send_telegram_message(msg)
+                            time.sleep(1.5) # Przerwa między alertami
+                            
+            time.sleep(2) # Oddech między lotniskami wylotowymi
+            
+        except Exception as e:
+            print(f"Błąd przy {origin_iata}: {e}")
+
+    print(f"Zakończono. Znaleziono okazji: {deals_counter}")
+
+if __name__ == "__main__":
+    search_ryanair_roundtrips()
