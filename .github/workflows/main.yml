@@ -2,7 +2,6 @@ name: Flight Check
 
 on:
   schedule:
-    # Uruchamiaj w każdy wtorek o 14:00 UTC (czyli 15:00 GMT+1)
     - cron: '0 14 * * 2'
   workflow_dispatch: 
 
@@ -10,13 +9,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - name: Pobranie kodu
+        uses: actions/checkout@v4 # Zaktualizowano z v3
+
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5 # Zaktualizowano z v4
         with:
-          python-version: '3.9'
-      - name: Install deps
+          python-version: '3.10'
+
+      - name: Instalacja bibliotek
         run: pip install -r requirements.txt
+
       - name: Run script
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
