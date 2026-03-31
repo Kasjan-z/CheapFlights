@@ -4,7 +4,6 @@ import re
 import time
 from datetime import datetime, timedelta
 
-# Importy z naszej nowej biblioteki
 try:
     from fast_flights import FlightQuery, Passengers, create_query, get_flights
     API_V2 = True
@@ -15,24 +14,17 @@ except ImportError:
 TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 
-# BAZA ŚREDNICH CEN (W DWIE STRONY) - PLN
 GLOBAL_AVERAGES = {
-    # Bliski Wschód i Europa LCC
     "AMM": 600, "AQJ": 600, "TLV": 800, "TBS": 900, "IST": 1100, "AYT": 1100, 
     "DXB": 1600, "DOH": 2600, "JED": 2200, "TFS": 1000, "FNC": 1000,
-    # Azja Środkowa, Południowa i Wschodnia
     "ALA": 2200, "FRU": 2500, "ISB": 2800, "KTM": 3800, "DEL": 2600, "BOM": 2600, 
     "BLR": 2800, "NRT": 3600, "KIX": 3600, "ICN": 3300, "PEK": 2800, "PVG": 2800, 
     "CAN": 3000, "UBN": 3800,
-    # Azja Południowo-Wschodnia
     "BKK": 3200, "HAN": 3600, "PNH": 4000, "VTE": 4200, "KUL": 3300, "PEN": 3500, 
     "SIN": 3500, "MNL": 3600, "CGK": 3600, "DPS": 4000, "SUB": 3800,
-    # Oceania
     "SYD": 6000, "MEL": 6000, "BNE": 6200, "AKL": 6500, "CHC": 6500,
-    # Afryka
     "CAI": 1400, "RAK": 800, "NBO": 2800, "ZNZ": 3200, "WDH": 3800, "JNB": 3200, 
     "CPT": 3400, "TNR": 4500, "DSS": 2600, "SEZ": 3600, "MRU": 3800,
-    # Ameryki
     "JFK": 2400, "LAX": 3200, "ORD": 2600, "MIA": 2800, "SFO": 3300, "YYZ": 2600, 
     "YVR": 3400, "YUL": 2600, "CUN": 3400, "HAV": 3600, "PUJ": 3500, "SJO": 3800, 
     "PTY": 3800, "GRU": 3800, "GIG": 3800, "EZE": 4600, "SCL": 4800, "LIM": 4500, 
@@ -131,4 +123,26 @@ def scan_google_flights():
                         msg = (
                             f"🌍 <b>MEGA HIT! KIERUNEK: {dest} (-{discount:.0f}%)</b>\n\n"
                             f"✈️ <b>Trasa:</b> {origin} ↔️ {dest}\n"
-                            f"🏢 <b>Lin
+                            f"🏢 <b>Linie:</b> {airlines}\n"
+                            f"⏱ <b>Czas/Przesiadki:</b> ~{duration_hours:.1f}h | {stop_text}\n"
+                            f"💸 <b>CENA: ~{price_pln:.2f} PLN</b>\n"
+                            f"<i>(Normalnie: {avg_price_pln:.2f} PLN | Wylot z 3 m-ce)</i>\n\n"
+                            f"🔎 <i>Wpisz tę trasę w Google Flights, aby znaleźć ten bilet!</i>"
+                        )
+                        send_telegram_message(msg)
+                        time.sleep(1)
+                        break 
+                        
+            except Exception as e:
+                pass 
+                
+            time.sleep(1.5) 
+
+    if deals_found == 0:
+        print("Nie znaleziono okazji spełniających kryteria. Wysyłam status na Telegram.")
+        send_telegram_message("📡 <i>Aktualnie nie ma żadnych okazji na loty długodystansowe.</i>")
+
+    print(f"✅ Skanowanie zakończone! Znaleziono okazji: {deals_found}")
+
+if __name__ == "__main__":
+    scan_google_flights()
