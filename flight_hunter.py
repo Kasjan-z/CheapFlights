@@ -15,10 +15,10 @@ ALL_AIRPORTS = WAW_AIRPORT + WMI_AIRPORT + REGIONAL_AIRPORTS
 
 # REALISTYCZNE ŚREDNIE CENY (w jedną stronę, w PLN)
 AVERAGE_PRICES = {
-    "Sweden": 140, "Norway": 140, "Denmark": 150, "United Kingdom": 220, 
-    "Ireland": 280, "Italy": 320, "Spain": 480, "Greece": 450,
+    "Sweden": 100, "Norway": 100, "Denmark": 150, "United Kingdom": 220, 
+    "Ireland": 280, "Italy": 220, "Spain": 480, "Greece": 450,
     "Croatia": 380, "Jordan": 550, "Cyprus": 420, "Malta": 400,
-    "France": 280, "Portugal": 550, "Morocco": 500, "Albania": 350,
+    "France": 280, "Portugal": 550, "Morocco": 500, "Albania": 200,
     "Bulgaria": 350, "Montenegro": 350, "DEFAULT": 300 
 }
 
@@ -75,7 +75,7 @@ def search_ryanair_roundtrips():
                 
                 if not out_date or out_price == 0: continue
                 
-                avg_rt_price = AVERAGE_PRICES.get(country, AVERAGE_PRICES["DEFAULT"]) * 1.3
+                avg_rt_price = AVERAGE_PRICES.get(country, AVERAGE_PRICES["DEFAULT"]) * 1.85
                 max_allowed_total = avg_rt_price * threshold
                 
                 if out_price >= max_allowed_total: continue
