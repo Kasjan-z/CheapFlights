@@ -36,12 +36,26 @@ def send_telegram_message(text):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
         print("Brak kluczy Telegrama.")
         return
-    url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-    payload = {"chat_id": TELEGRAM_CHAT_ID, "text": text, "parse_mode": "HTML"}
-    try:
-        requests.post(url, json=payload).raise_for_status()
-    except Exception as e:
-        print(f"Błąd wysyłania na Telegram: {e}")
+    
+    # Rozdzielamy numery ID po przecinku i tworzymy z nich listę
+    chat_ids = [cid.strip() for cid in TELEGRAM_CHAT_ID.split(',')]
+    
+    for chat_id in chat_ids:
+        if not chat_id: # Zabezpieczenie, gdybyś przypadkiem postawił gdzieś dwa przecinki
+            continue
+            
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
+        payload = {"chat_id": chat_id, "text": text, "parse_mode": "HTML"}
+        
+        try:
+            requests.post(url, json=payload).raise_for_status()
+            print(f"Wysłano ofertę do użytkownika: {chat_id}")
+        except Exception as e:
+            print(f"Błąd wysyłania do {chat_id}: {e}")
+            
+        # BARDZO WAŻNE: Telegram blokuje boty, które wysyłają za dużo wiadomości w jednej sekundzie.
+        # Dajemy mu pół sekundy oddechu przed wysłaniem wiadomości do kolejnej osoby.
+        time.sleep(0.5)
 
 def search_ryanair():
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] Uruchamiam skaner Ryanair...")
