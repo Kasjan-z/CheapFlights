@@ -98,7 +98,7 @@ def search_ryanair_roundtrips():
                 
                 # Obliczamy próg cenowy dla dwóch stron (Średnia x 2 * 0.40)
                 avg_rt_price = AVERAGE_PRICES.get(country, AVERAGE_PRICES["DEFAULT"]) * 2
-                max_allowed_total = avg_rt_price * 0.40
+                max_allowed_total = avg_rt_price * 0.30
                 
                 # Jeśli sam wylot przekracza budżet na całość, pomijamy
                 if out_price >= max_allowed_total: continue
