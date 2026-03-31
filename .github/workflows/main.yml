@@ -5,33 +5,21 @@ on:
     - cron: '0 14 * * 2'
   workflow_dispatch: 
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true 
-
 jobs:
   hunt-flights:
     runs-on: ubuntu-latest
     steps:
-      - name: Pobranie kodu z repozytorium
+      - name: Pobranie kodu
         uses: actions/checkout@v4
-
-      - name: Przygotowanie środowiska Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.21'
-          cache: false
 
       - name: Przygotowanie środowiska Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Instalacja bibliotek Pythona
-        run: pip install requests
+      - name: Instalacja bibliotek (Python)
+        run: pip install requests fast-flights
 
-      # ==========================================
-      # MÓZG 1: RYANAIR (EUROPA)
-      # ==========================================
       - name: 🇪🇺 Odpalenie Snajpera (Ryanair)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -39,25 +27,5 @@ jobs:
         run: python flight_hunter.py
         continue-on-error: true
 
-      # ==========================================
-      # MÓZG 2: GOOGLE FLIGHTS (ŚWIAT)
-      # ==========================================
-      - name: 📦 Pobranie najnowszych zależności Go (Fix wersji)
-        run: |
-          rm -f go.mod go.sum
-          go mod init flight-scanner
-          go get github.com/AWeirdDev/flights@latest
-          go mod tidy
-
-      - name: 🌍 Pobieranie danych z Google Flights (Go)
-        run: go run google_scanner.go
-        continue-on-error: true
-
-      - name: 🛠️ Debug (Podgląd struktury JSON)
-        run: cat results.json | head -n 50 || echo "Brak pliku results.json"
-
-      - name: 📊 Analiza danych i wysyłka alertów (Python)
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: python processor.py
+      - name: 🌍 Odpalenie Kolosa (Google Flights - Sonda)
+        run: python google_hunter.py
