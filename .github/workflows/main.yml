@@ -2,7 +2,8 @@ name: Flight Check
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
+    # Uruchamiaj w każdy wtorek o 14:00 UTC (czyli 15:00 GMT+1)
+    - cron: '0 14 * * 2'
   workflow_dispatch: 
 
 jobs:
