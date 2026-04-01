@@ -43,7 +43,7 @@ def send_telegram_message(text):
     except Exception: pass
 
 def search_ryanair_roundtrips():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Snajpera Ryanair! (Z anty-spamem)")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Snajpera Ryanair! (Z nazwami państw)")
     date_from = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
     date_to = (datetime.now() + timedelta(days=120)).strftime("%Y-%m-%d")
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
@@ -66,7 +66,12 @@ def search_ryanair_roundtrips():
             for fare_out in res_out.json().get("fares", []):
                 out_data = fare_out.get("outbound", {})
                 out_price = float(out_data.get("price", {}).get("value", 0))
+                
+                # WYCIĄGNIĘCIE NAZWY LOTNISKA I PAŃSTWA Z JSONA
                 dest_iata = out_data.get("arrivalAirport", {}).get("iataCode")
+                dest_name = out_data.get("arrivalAirport", {}).get("name", dest_iata)
+                country_name = out_data.get("arrivalAirport", {}).get("countryName", "")
+                
                 out_date = out_data.get("departureDate", "").split('T')[0]
                 
                 if not out_date or out_price == 0: continue
@@ -107,9 +112,12 @@ def search_ryanair_roundtrips():
                             discount_pct = 100 - ((total_price / avg_rt_price) * 100)
                             booking_link = f"https://www.ryanair.com/pl/pl/trip/flights/select?adults=1&dateOut={out_date}&dateIn={in_date}&isConnectedFlight=false&isReturn=true&originIata={origin_iata}&destinationIata={dest_iata}"
                             
+                            # CZYSTSZY FORMAT WIADOMOŚCI
+                            display_header = country_name if country_name else dest_name
+                            
                             msg = (
-                                f"🔥 <b>LEGENDARNY HIT (RYANAIR)! (-{discount_pct:.0f}%)</b>\n\n"
-                                f"✈️ <b>Trasa:</b> {origin_iata} ↔️ {dest_iata}\n"
+                                f"🔥 <b>HIT! {display_header.upper()} (-{discount_pct:.0f}%)</b>\n\n"
+                                f"✈️ <b>Trasa:</b> {origin_iata} ↔️ {dest_iata} ({dest_name})\n"
                                 f"🛫 <b>Wylot:</b> {out_date} | 🛬 <b>Powrót:</b> {in_date}\n"
                                 f"💰 <b>SUMA: {total_price:.2f} PLN</b> (Średnia: {avg_rt_price:.0f} PLN)\n\n"
                                 f"<a href='{booking_link}'>🔗 ZAREZERWUJ (Ryanair)</a>"
