@@ -15,7 +15,7 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 HISTORY_FILE = "sent_deals.txt"
 
-# WYSELEKCJONOWANA BAZA ŚREDNICH CEN (PLN)
+# BAZA ŚREDNICH CEN (PLN)
 GLOBAL_AVERAGES = {
     "AGA": 1000, "TNG": 1200, "RAK": 800, "RBA": 1000, "CMN": 1200, 
     "DEL": 2800, "BOM": 2800, "GOI": 3200, "COK": 2600, "TRV": 3500, "CMB": 3000, 
@@ -39,13 +39,37 @@ GLOBAL_AVERAGES = {
     "DXB": 1600, "DOH": 2600, "JED": 2200
 }
 
+# TŁUMACZ KODÓW IATA NA PIĘKNE NAZWY
+IATA_NAMES = {
+    "AGA": "Agadir, Maroko", "TNG": "Tanger, Maroko", "RAK": "Marakesz, Maroko", "RBA": "Rabat, Maroko", "CMN": "Casablanca, Maroko",
+    "DEL": "Delhi, Indie", "BOM": "Bombaj, Indie", "GOI": "Goa, Indie", "COK": "Koczin, Indie", "TRV": "Thiruvananthapuram, Indie", "CMB": "Kolombo, Sri Lanka",
+    "BKK": "Bangkok, Tajlandia", "HKT": "Phuket, Tajlandia", "KBV": "Krabi, Tajlandia", "USM": "Ko Samui, Tajlandia",
+    "HAN": "Hanoi, Wietnam", "SGN": "Ho Chi Minh, Wietnam", "DAD": "Da Nang, Wietnam", "CXR": "Nha Trang, Wietnam", "SAI": "Siem Reap, Kambodża",
+    "KUL": "Kuala Lumpur, Malezja", "PEN": "Penang, Malezja", "LGK": "Langkawi, Malezja", "SIN": "Singapur",
+    "CGK": "Dżakarta, Indonezja", "DPS": "Bali, Indonezja", "MNL": "Manila, Filipiny", "CEB": "Cebu, Filipiny", "PPS": "Puerto Princesa, Filipiny", "MPH": "Boracay, Filipiny",
+    "NRT": "Tokio, Japonia", "HND": "Tokio, Japonia", "KIX": "Osaka, Japonia", "CTS": "Sapporo, Japonia", "OKA": "Okinawa, Japonia", "NGO": "Nagoja, Japonia", "FUK": "Fukuoka, Japonia",
+    "ICN": "Seul, Korea Płd.", "PEK": "Pekin, Chiny", "PVG": "Szanghaj, Chiny",
+    "SYD": "Sydney, Australia", "MEL": "Melbourne, Australia", "BNE": "Brisbane, Australia", "ADL": "Adelaide, Australia", "PER": "Perth, Australia",
+    "JNB": "Johannesburg, RPA", "CPT": "Kapsztad, RPA", "DUR": "Durban, RPA", "NBO": "Nairobi, Kenia", "MBA": "Mombasa, Kenia",
+    "DAR": "Dar es Salaam, Tanzania", "ZNZ": "Zanzibar, Tanzania", "JRO": "Kilimandżaro, Tanzania",
+    "YYZ": "Toronto, Kanada", "YVR": "Vancouver, Kanada", "YYC": "Calgary, Kanada",
+    "MEX": "Mexico City, Meksyk", "CUN": "Cancun, Meksyk", "TUQ": "Tulum, Meksyk", "PVR": "Puerto Vallarta, Meksyk", "SJD": "San Jose del Cabo, Meksyk",
+    "SJO": "San Jose, Kostaryka", "LIR": "Liberia, Kostaryka", "PTY": "Panama City, Panama", "HAV": "Hawana, Kuba", "PUJ": "Punta Cana, Dominikana",
+    "GRU": "Sao Paulo, Brazylia", "GIG": "Rio de Janeiro, Brazylia", "SSA": "Salvador, Brazylia", "FOR": "Fortaleza, Brazylia",
+    "EZE": "Buenos Aires, Argentyna", "SCL": "Santiago, Chile", "LIM": "Lima, Peru", "CUZ": "Cuzco, Peru",
+    "BOG": "Bogota, Kolumbia", "MDE": "Medellin, Kolumbia", "CTG": "Cartagena, Kolumbia", "CLO": "Cali, Kolumbia", "UIO": "Quito, Ekwador", "GYE": "Guayaquil, Ekwador",
+    "MVD": "Montevideo, Urugwaj", "LPB": "La Paz, Boliwia", "FNC": "Madera, Portugalia", "TFS": "Teneryfa, Hiszpania",
+    "AMM": "Amman, Jordania", "AQJ": "Akaba, Jordania", "TLV": "Tel Awiw, Izrael", "TBS": "Tbilisi, Gruzja", "IST": "Stambuł, Turcja", "AYT": "Antalya, Turcja",
+    "DXB": "Dubaj, ZEA", "DOH": "Doha, Katar", "JED": "Dżudda, Arabia Saudyjska"
+}
+
 OCEANIA_SOUTH_AM = {"SYD", "MEL", "BNE", "ADL", "PER", "SCL", "EZE", "MVD", "LPB"}
 LCC_ZONE = {"AMM", "AQJ", "TLV", "TBS", "IST", "AYT", "DXB", "DOH", "JED", "TFS", "FNC", "AGA", "TNG", "RAK", "RBA", "CMN"}
 
 def get_threshold(iata):
-    if iata in OCEANIA_SOUTH_AM: return 0.65  # -35% 
-    if iata in LCC_ZONE: return 0.40          # -60% 
-    return 0.55                               # -45% 
+    if iata in OCEANIA_SOUTH_AM: return 0.65  
+    if iata in LCC_ZONE: return 0.40          
+    return 0.55                               
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -80,7 +104,7 @@ def parse_price_to_pln(price_str):
     return clean_val 
 
 def scan_google_flights():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Kolosa! (Z anty-spamem)")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Kolosa! (Z nazwami państw)")
     date_out = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
     date_in = (datetime.now() + timedelta(days=104)).strftime("%Y-%m-%d")
     
@@ -125,16 +149,15 @@ def scan_google_flights():
                         deal_id = f"GF-{origin}-{dest}-{date_out}-{price_pln}"
                         history = load_history()
                         
-                        if deal_id in history:
-                            print(f"Pominięto {dest} - już to dzisiaj wysyłałem!")
-                            continue
+                        if deal_id in history: continue
                             
                         deals_found += 1
                         discount = 100 - ((price_pln / avg_price_pln) * 100)
                         stop_text = "Bez przesiadek" if stops == 0 else f"{stops} przesiadka/i"
+                        location_name = IATA_NAMES.get(dest, dest) # Wyciągnięcie pięknej nazwy
                         
                         msg = (
-                            f"🌍 <b>LEGENDARNY HIT! {dest} (-{discount:.0f}%)</b>\n\n"
+                            f"🌍 <b>HIT! {location_name.upper()} (-{discount:.0f}%)</b>\n\n"
                             f"✈️ <b>Trasa:</b> {origin} ↔️ {dest}\n"
                             f"🏢 <b>Linie:</b> {airlines}\n"
                             f"⏱ <b>Czas/Przesiadki:</b> ~{duration_hours:.1f}h | {stop_text}\n"
@@ -150,7 +173,7 @@ def scan_google_flights():
             time.sleep(1.5) 
 
     if deals_found == 0:
-        send_telegram_message("📡 <i>Aktualnie brak legendarnych okazji długodystansowych. Szukam dalej...</i>")
+        send_telegram_message("📡 <i>Aktualnie brak okazji długodystansowych spełniających rygorystyczne kryteria. Szukam dalej...</i>")
 
 if __name__ == "__main__":
     scan_google_flights()
