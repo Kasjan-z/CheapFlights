@@ -2,10 +2,9 @@ name: Global Flight Hunter (Europa + Świat)
 
 on:
   schedule:
-    - cron: '0 */6 * * *' # Uruchamia się o 00:00, 06:00, 12:00 i 18:00 UTC
+    - cron: '0 */6 * * *'
   workflow_dispatch: 
 
-# BARDZO WAŻNE: Dajemy botowi prawo do zapisywania plików w repozytorium
 permissions:
   contents: write 
 
@@ -24,9 +23,6 @@ jobs:
       - name: Instalacja bibliotek (Python)
         run: pip install requests fast-flights
 
-      # ==========================================
-      # MÓZG 2: GOOGLE FLIGHTS (ŚWIAT)
-      # ==========================================
       - name: 🌍 Odpalenie Kolosa (Google Flights)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -34,9 +30,6 @@ jobs:
         run: python google_hunter.py
         continue-on-error: true
 
-      # ==========================================
-      # MÓZG 1: RYANAIR (EUROPA)
-      # ==========================================
       - name: 🇪🇺 Odpalenie Snajpera (Ryanair)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -44,9 +37,6 @@ jobs:
         run: python flight_hunter.py
         continue-on-error: true
 
-      # ==========================================
-      # SYSTEM ANTY-SPAMOWY (Zapis historii)
-      # ==========================================
       - name: 💾 Zapisz historię wysłanych lotów do GitHuba
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
