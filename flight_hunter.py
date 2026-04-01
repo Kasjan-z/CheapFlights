@@ -43,11 +43,13 @@ def send_telegram_message(text):
     except Exception: pass
 
 def search_ryanair_roundtrips():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Snajpera Ryanair! (Z nazwami państw)")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Snajpera Ryanair! (Z nazwami państw i Heartbeatem)")
     date_from = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
     date_to = (datetime.now() + timedelta(days=120)).strftime("%Y-%m-%d")
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
     
+    deals_found = 0  # LICZNIK OKAZJI
+
     for origin_iata in ALL_AIRPORTS:
         if origin_iata == "WAW": threshold = 0.40
         elif origin_iata == "WMI": threshold = 0.30
@@ -67,7 +69,6 @@ def search_ryanair_roundtrips():
                 out_data = fare_out.get("outbound", {})
                 out_price = float(out_data.get("price", {}).get("value", 0))
                 
-                # WYCIĄGNIĘCIE NAZWY LOTNISKA I PAŃSTWA Z JSONA
                 dest_iata = out_data.get("arrivalAirport", {}).get("iataCode")
                 dest_name = out_data.get("arrivalAirport", {}).get("name", dest_iata)
                 country_name = out_data.get("arrivalAirport", {}).get("countryName", "")
@@ -109,10 +110,10 @@ def search_ryanair_roundtrips():
                             if deal_id in history:
                                 continue
                             
+                            deals_found += 1
                             discount_pct = 100 - ((total_price / avg_rt_price) * 100)
                             booking_link = f"https://www.ryanair.com/pl/pl/trip/flights/select?adults=1&dateOut={out_date}&dateIn={in_date}&isConnectedFlight=false&isReturn=true&originIata={origin_iata}&destinationIata={dest_iata}"
                             
-                            # CZYSTSZY FORMAT WIADOMOŚCI
                             display_header = country_name if country_name else dest_name
                             
                             msg = (
@@ -127,6 +128,10 @@ def search_ryanair_roundtrips():
                             time.sleep(1)
             time.sleep(1.5)
         except Exception: pass
+
+    # RAPORT KONTROLNY JEŚLI BRAK HITÓW
+    if deals_found == 0:
+        send_telegram_message("📡 <i>Snajper Ryanair: Przeskanowałem Europę. Brak legendarnych hitów w tej chwili.</i>")
 
 if __name__ == "__main__":
     search_ryanair_roundtrips()
