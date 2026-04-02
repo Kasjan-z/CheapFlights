@@ -15,7 +15,6 @@ TELEGRAM_BOT_TOKEN = os.environ.get("TELEGRAM_BOT_TOKEN")
 TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID")
 HISTORY_FILE = "sent_deals.txt"
 
-# BAZA ŚREDNICH CEN (PLN)
 GLOBAL_AVERAGES = {
     "AGA": 1000, "TNG": 1200, "RAK": 800, "RBA": 1000, "CMN": 1200, 
     "DEL": 2800, "BOM": 2800, "GOI": 3200, "COK": 2600, "TRV": 3500, "CMB": 3000, 
@@ -39,7 +38,6 @@ GLOBAL_AVERAGES = {
     "DXB": 1600, "DOH": 2600, "JED": 2200
 }
 
-# TŁUMACZ KODÓW IATA NA PIĘKNE NAZWY
 IATA_NAMES = {
     "AGA": "Agadir, Maroko", "TNG": "Tanger, Maroko", "RAK": "Marakesz, Maroko", "RBA": "Rabat, Maroko", "CMN": "Casablanca, Maroko",
     "DEL": "Delhi, Indie", "BOM": "Bombaj, Indie", "GOI": "Goa, Indie", "COK": "Koczin, Indie", "TRV": "Thiruvananthapuram, Indie", "CMB": "Kolombo, Sri Lanka",
@@ -104,9 +102,10 @@ def parse_price_to_pln(price_str):
     return clean_val 
 
 def scan_google_flights():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Kolosa! (Z nazwami państw)")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Kolosa! (Pobyt min. 7 dni)")
+    # ZMIANA: Wylot za 90 dni, powrót po 10 dniach (Pobyt 10 dni)
     date_out = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
-    date_in = (datetime.now() + timedelta(days=104)).strftime("%Y-%m-%d")
+    date_in = (datetime.now() + timedelta(days=100)).strftime("%Y-%m-%d")
     
     origins = ["WAW", "KRK"] 
     deals_found = 0
@@ -139,7 +138,6 @@ def scan_google_flights():
                     stops = int(getattr(flight, 'stops', 99))
                     duration_hours = parse_duration(getattr(flight, 'duration', "99 hr"))
                     airlines = getattr(flight, 'name', "Nieznane")
-                    
                     if stops > 2 or duration_hours > 35.0: continue
                     
                     threshold = get_threshold(dest)
@@ -147,22 +145,19 @@ def scan_google_flights():
                     
                     if price_pln <= max_accepted_price:
                         deal_id = f"GF-{origin}-{dest}-{date_out}-{price_pln}"
-                        history = load_history()
-                        
-                        if deal_id in history: continue
+                        if deal_id in load_history(): continue
                             
                         deals_found += 1
                         discount = 100 - ((price_pln / avg_price_pln) * 100)
-                        stop_text = "Bez przesiadek" if stops == 0 else f"{stops} przesiadka/i"
-                        location_name = IATA_NAMES.get(dest, dest) # Wyciągnięcie pięknej nazwy
+                        location_name = IATA_NAMES.get(dest, dest)
                         
                         msg = (
                             f"🌍 <b>HIT! {location_name.upper()} (-{discount:.0f}%)</b>\n\n"
                             f"✈️ <b>Trasa:</b> {origin} ↔️ {dest}\n"
                             f"🏢 <b>Linie:</b> {airlines}\n"
-                            f"⏱ <b>Czas/Przesiadki:</b> ~{duration_hours:.1f}h | {stop_text}\n"
+                            f"⏱ <b>Czas/Przesiadki:</b> ~{duration_hours:.1f}h | {stops} przesiadki\n"
                             f"💸 <b>CENA: ~{price_pln:.0f} PLN</b>\n"
-                            f"<i>(Normalnie: {avg_price_pln} PLN | Termin za 3 m-ce)</i>\n\n"
+                            f"<i>(Normalnie: {avg_price_pln} PLN | Pobyt 10 dni)</i>\n\n"
                             f"🔎 <i>Szukaj ręcznie na Google Flights!</i>"
                         )
                         send_telegram_message(msg)
@@ -173,7 +168,7 @@ def scan_google_flights():
             time.sleep(1.5) 
 
     if deals_found == 0:
-        send_telegram_message("📡 <i>Aktualnie brak okazji długodystansowych spełniających rygorystyczne kryteria. Szukam dalej...</i>")
+        send_telegram_message("📡 <i>Kolos Google: Brak nowych okazji (pobyt 10 dni). Szukam dalej...</i>")
 
 if __name__ == "__main__":
     scan_google_flights()
