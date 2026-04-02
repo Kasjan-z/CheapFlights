@@ -43,12 +43,12 @@ def send_telegram_message(text):
     except Exception: pass
 
 def search_ryanair_roundtrips():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Snajpera Ryanair! (Z nazwami państw i Heartbeatem)")
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Snajpera Ryanair! (Pobyt min. 3 dni)")
     date_from = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
     date_to = (datetime.now() + timedelta(days=120)).strftime("%Y-%m-%d")
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
     
-    deals_found = 0  # LICZNIK OKAZJI
+    deals_found = 0
 
     for origin_iata in ALL_AIRPORTS:
         if origin_iata == "WAW": threshold = 0.40
@@ -68,22 +68,20 @@ def search_ryanair_roundtrips():
             for fare_out in res_out.json().get("fares", []):
                 out_data = fare_out.get("outbound", {})
                 out_price = float(out_data.get("price", {}).get("value", 0))
-                
                 dest_iata = out_data.get("arrivalAirport", {}).get("iataCode")
                 dest_name = out_data.get("arrivalAirport", {}).get("name", dest_iata)
                 country_name = out_data.get("arrivalAirport", {}).get("countryName", "")
-                
                 out_date = out_data.get("departureDate", "").split('T')[0]
                 
                 if not out_date or out_price == 0: continue
                 
-                avg_one_way = DEST_AVERAGES.get(dest_iata, DEST_AVERAGES["DEFAULT"])
-                avg_rt_price = avg_one_way * 2
+                avg_rt_price = DEST_AVERAGES.get(dest_iata, DEST_AVERAGES["DEFAULT"]) * 2
                 max_allowed_total = avg_rt_price * threshold
                 
                 if out_price >= max_allowed_total: continue
                 
-                ret_from = (datetime.strptime(out_date, "%Y-%m-%d") + timedelta(days=1)).strftime("%Y-%m-%d")
+                # ZMIANA: Powrót najwcześniej po 2 dniach (np. wylot 15, powrót 17)
+                ret_from = (datetime.strptime(out_date, "%Y-%m-%d") + timedelta(days=2)).strftime("%Y-%m-%d")
                 ret_to = (datetime.strptime(out_date, "%Y-%m-%d") + timedelta(days=14)).strftime("%Y-%m-%d")
                 
                 params_in = {
@@ -100,24 +98,20 @@ def search_ryanair_roundtrips():
                         in_data = fare_in.get("outbound", {})
                         in_price = float(in_data.get("price", {}).get("value", 0))
                         in_date = in_data.get("departureDate", "").split('T')[0]
-                        
                         total_price = out_price + in_price
                         
                         if total_price <= max_allowed_total:
                             deal_id = f"FR-{origin_iata}-{dest_iata}-{out_date}-{total_price}"
                             history = load_history()
-                            
-                            if deal_id in history:
-                                continue
+                            if deal_id in history: continue
                             
                             deals_found += 1
                             discount_pct = 100 - ((total_price / avg_rt_price) * 100)
                             booking_link = f"https://www.ryanair.com/pl/pl/trip/flights/select?adults=1&dateOut={out_date}&dateIn={in_date}&isConnectedFlight=false&isReturn=true&originIata={origin_iata}&destinationIata={dest_iata}"
                             
-                            display_header = country_name if country_name else dest_name
-                            
+                            header = country_name if country_name else dest_name
                             msg = (
-                                f"🔥 <b>HIT! {display_header.upper()} (-{discount_pct:.0f}%)</b>\n\n"
+                                f"🔥 <b>HIT! {header.upper()} (-{discount_pct:.0f}%)</b>\n\n"
                                 f"✈️ <b>Trasa:</b> {origin_iata} ↔️ {dest_iata} ({dest_name})\n"
                                 f"🛫 <b>Wylot:</b> {out_date} | 🛬 <b>Powrót:</b> {in_date}\n"
                                 f"💰 <b>SUMA: {total_price:.2f} PLN</b> (Średnia: {avg_rt_price:.0f} PLN)\n\n"
@@ -129,9 +123,8 @@ def search_ryanair_roundtrips():
             time.sleep(1.5)
         except Exception: pass
 
-    # RAPORT KONTROLNY JEŚLI BRAK HITÓW
     if deals_found == 0:
-        send_telegram_message("📡 <i>Snajper Ryanair: Przeskanowałem Europę. Brak legendarnych hitów w tej chwili.</i>")
+        send_telegram_message("📡 <i>Snajper Ryanair: Brak nowych hitów (min. 3 dni pobytu). Szukam dalej...</i>")
 
 if __name__ == "__main__":
     search_ryanair_roundtrips()
