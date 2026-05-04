@@ -51,9 +51,9 @@ def search_ryanair_roundtrips():
     headers = {"User-Agent": "Mozilla/5.0", "Accept": "application/json"}
 
     for origin_iata in ALL_AIRPORTS:
-        if origin_iata == "WAW": threshold = 0.50
-        elif origin_iata == "WMI": threshold = 0.40
-        else: threshold = 0.30
+        if origin_iata == "WAW": threshold = 0.35
+        elif origin_iata == "WMI": threshold = 0.30
+        else: threshold = 0.20
         
         base_url = "https://www.ryanair.com/api/farfnd/3/oneWayFares"
         params_out = {
