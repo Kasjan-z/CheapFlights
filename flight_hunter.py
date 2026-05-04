@@ -23,14 +23,8 @@ DEST_AVERAGES = {
     "ATH": 300, "CHQ": 320, "CFU": 280, "RHO": 300, "PFO": 300, "LCA": 300, "MLA": 250,
     "BVA": 160, "MRS": 180, "NCE": 220, "CRL": 120, "EIN": 130, "BER": 140, "DTM": 110, "NRN": 110, "HHN": 110,
     "BUD": 130, "PRG": 140, "VIE": 130, "BTS": 110, "SKP": 180, "SOF": 160, 
-    "AMM": 350, "RAK": 380, "AGA": 380, "TLV": 350, "KUT": 250,
+    "AMM": 350, "RAK": 380, "AGA": 380, "TLV": 350, "KUT": 250, "TIA": 200, "ZAD": 200, "MXP":200, "LBA": 200, "MMX": 200,
     
-    # Skorygowane i nowe lotniska:
-    "TIA": 300,
-    "ZAD": 200,
-    "MXP": 200,
-    "LBA": 200,
-    "MMX": 200,
 
     "DEFAULT": 250 
 }
