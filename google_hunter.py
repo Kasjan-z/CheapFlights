@@ -61,13 +61,9 @@ IATA_NAMES = {
     "DXB": "Dubaj, ZEA", "DOH": "Doha, Katar", "JED": "Dżudda, Arabia Saudyjska"
 }
 
-OCEANIA_SOUTH_AM = {"SYD", "MEL", "BNE", "ADL", "PER", "SCL", "EZE", "MVD", "LPB"}
-LCC_ZONE = {"AMM", "AQJ", "TLV", "TBS", "IST", "AYT", "DXB", "DOH", "JED", "TFS", "FNC", "AGA", "TNG", "RAK", "RBA", "CMN"}
-
 def get_threshold(iata):
-    if iata in OCEANIA_SOUTH_AM: return 0.65  
-    if iata in LCC_ZONE: return 0.40          
-    return 0.55                               
+    # Zgodnie z prośbą, dla wszystkich lotów szukamy teraz do 0.8 oryginalnej ceny
+    return 0.80                               
 
 def load_history():
     if os.path.exists(HISTORY_FILE):
@@ -102,13 +98,11 @@ def parse_price_to_pln(price_str):
     return clean_val 
 
 def scan_google_flights():
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Kolosa! (Pobyt min. 7 dni)")
-    # ZMIANA: Wylot za 90 dni, powrót po 10 dniach (Pobyt 10 dni)
+    print(f"[{datetime.now().strftime('%H:%M:%S')}] Odpalam Kolosa! (Pobyt min. 7 dni, próg 0.8, cichy tryb)")
     date_out = (datetime.now() + timedelta(days=90)).strftime("%Y-%m-%d")
     date_in = (datetime.now() + timedelta(days=100)).strftime("%Y-%m-%d")
     
     origins = ["WAW", "KRK"] 
-    deals_found = 0
 
     for origin in origins:
         for dest, avg_price_pln in GLOBAL_AVERAGES.items():
@@ -147,7 +141,6 @@ def scan_google_flights():
                         deal_id = f"GF-{origin}-{dest}-{date_out}-{price_pln}"
                         if deal_id in load_history(): continue
                             
-                        deals_found += 1
                         discount = 100 - ((price_pln / avg_price_pln) * 100)
                         location_name = IATA_NAMES.get(dest, dest)
                         
@@ -166,9 +159,6 @@ def scan_google_flights():
                         break 
             except Exception: pass
             time.sleep(1.5) 
-
-    if deals_found == 0:
-        send_telegram_message("📡 <i>Kolos Google: Brak nowych okazji (pobyt 10 dni). Szukam dalej...</i>")
 
 if __name__ == "__main__":
     scan_google_flights()
